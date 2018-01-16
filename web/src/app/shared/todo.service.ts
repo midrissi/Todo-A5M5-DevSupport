@@ -1,16 +1,14 @@
 import { Injectable } from '@angular/core';
-import { Store } from "@ngrx/store";
+import { MatDialog } from '@angular/material';
 
 import { WakandaService } from "./wakanda.service";
-import { ACTION, ITodo } from "./todo.reducer";
-import { MatDialog } from '@angular/material';
 import { ConfirmComponent } from './confirm/confirm.component';
+import { ITodo } from "./interfaces";
 
 @Injectable()
 export class TodoService {
   constructor(
     private wakanda: WakandaService,
-    private store: Store<{ todo: any }>,
     private dialog: MatDialog
   ) {
 
@@ -30,17 +28,17 @@ export class TodoService {
   } = {
     pageSize: 10,
     start: 0
-  }) {
+  }): Promise<{
+    list: ITodo[];
+    count: number;
+  }> {
     const Todo = await this.getClass();
     const res = await Todo.query(opts);
 
-    this.store.dispatch({
-      type: ACTION.LOAD_SUCCESS,
-      payload: {
-        items: res.entities,
-        count: res._count
-      }
-    });
+    return {
+      list: res.entities,
+      count: res._count
+    };
   }
 
   remove(todo): Promise<any> {
@@ -53,13 +51,6 @@ export class TodoService {
       dialogRef.afterClosed().subscribe(async isYes => {
         if(isYes){
           await todo.delete();
-
-          this.store.dispatch({
-            type: ACTION.REMOVE_ONE,
-            payload: todo
-          });
-
-          this.getAll();
         }
 
         resolve(isYes);
